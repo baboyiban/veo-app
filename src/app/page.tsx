@@ -8,7 +8,7 @@ type StatusResp = { done: boolean; fileUri?: string; raw?: any } | { error: stri
 
 export default function HomePage() {
   const [prompt, setPrompt] = useState(
-    "살아있는 것 처럼 만들어줘"
+    "생생한 영상으로 만들어줘"
   );
   const [negative, setNegative] = useState("");
   const [aspect, setAspect] = useState("16:9");
@@ -21,6 +21,7 @@ export default function HomePage() {
   const [opName, setOpName] = useState<string | null>(null);
   const [status, setStatus] = useState<string>("");
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [lastFileUri, setLastFileUri] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const canStart = useMemo(() => prompt.trim().length > 0 && !isLoading, [prompt, isLoading]);
@@ -87,14 +88,21 @@ export default function HomePage() {
         setStatus("완료✅");
         setIsLoading(false);
         if (data.fileUri) {
+          setLastFileUri(data.fileUri);
+          console.log("Attempting download with fileUri:", data.fileUri);
           const dl = await fetch(`/api/video/download?fileUri=${encodeURIComponent(data.fileUri)}`);
           if (dl.ok) {
             const blob = await dl.blob();
+            console.log("Download successful, blob size:", blob.size);
             const url = URL.createObjectURL(blob);
             setVideoUrl(url);
           } else {
+            console.error("Download failed:", dl.status, await dl.text());
             setStatus("다운로드 실패");
           }
+        } else {
+          console.warn("Operation done but no fileUri:", data);
+          setStatus("완료됐지만 파일 URI가 없음");
         }
       } else {
         setStatus("생성 중...(10초 주기)");
@@ -169,6 +177,11 @@ export default function HomePage() {
 
             <div style={{ height: 12 }} />
             <button onClick={start} disabled={!canStart}>{isLoading ? "생성 중..." : "비디오 생성"}</button>
+            {opName && (
+              <div style={{ marginTop: 8 }} className="small">
+                바로 저장: <a href={`/api/video/wait?name=${encodeURIComponent(opName)}`} target="_blank" rel="noreferrer">완료되면 즉시 다운로드</a>
+              </div>
+            )}
             <div style={{ height: 8 }} />
             <div className="small">상태: {status}</div>
           </div>
@@ -181,6 +194,14 @@ export default function HomePage() {
               <video className="video" controls src={videoUrl} />
             ) : (
               <div className="file-drop">아직 생성된 비디오가 없습니다.</div>
+            )}
+            {lastFileUri && (
+              <div style={{ marginTop: 8 }}>
+                <div className="small">원본 파일 식별자: <code>{lastFileUri}</code></div>
+                <div className="small">
+                  직접 저장: <a href={`/api/video/download?fileUri=${encodeURIComponent(lastFileUri)}`} target="_blank" rel="noreferrer">다운로드 링크 열기</a>
+                </div>
+              </div>
             )}
           </div>
         </div>

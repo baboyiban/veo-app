@@ -20,14 +20,37 @@ export async function GET(req: NextRequest) {
     }
     const latest = await opRes.json();
 
+    // Optional progress fields if exposed by backend
+    const meta = latest?.metadata || latest?.metadata?.value || {};
+    const progress = meta.progress || meta.percent || meta.progress_percent || meta.progressPercent;
+    const stage = meta.stage || meta.state || meta.status;
+
     let fileUri: string | undefined;
-    const gv = latest?.response?.generatedVideos;
+    // Support both camelCase and snake_case from backend
+    const resp = latest?.response || latest?.response?.value || {};
+    const gv = resp.generatedVideos || resp.generated_videos || resp.videos || resp.results;
     if (latest?.done && Array.isArray(gv) && gv.length > 0) {
-      const video = gv[0]?.video;
-      if (video) fileUri = typeof video === "string" ? video : video.uri;
+      const item = gv[0];
+      const v = item?.video || item?.video_result || item?.result || item;
+      if (v) {
+        // common direct fields
+        fileUri = typeof v === "string" ? v : (v.uri || v.fileUri || v.file_uri || v.mediaUri || v.media_uri);
+        // nested file objects
+        if (!fileUri) {
+          const f = v.file || v.output_file || v.result_file || v.media || v.content;
+          if (f) {
+            fileUri = f.uri || f.fileUri || f.file_uri || f.mediaUri || f.media_uri || f.name;
+          }
+        }
+        // sometimes only id provided
+        if (!fileUri) {
+          const id = v.fileId || v.file_id || item.fileId || item.file_id;
+          if (id) fileUri = id;
+        }
+      }
     }
 
-    return Response.json({ done: !!latest?.done, fileUri, raw: latest });
+    return Response.json({ done: !!latest?.done, fileUri, progress, stage, raw: latest });
   } catch (err: any) {
     console.error("/api/video/status error", err);
     return Response.json({ error: err?.message ?? "Unknown error" }, { status: 400 });

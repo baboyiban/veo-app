@@ -13,7 +13,9 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: "Expected 'file' form-data field" }, { status: 400 });
     }
 
-    // Upload via Files API (raw upload)
+    // Upload via Files API (raw upload). Use Buffer body to avoid duplex requirement.
+    const ab = await file.arrayBuffer();
+    const bufView = new Uint8Array(ab);
     const uploadRes = await fetch(
       `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${apiKey}`,
       {
@@ -21,9 +23,10 @@ export async function POST(req: NextRequest) {
         headers: {
           "X-Goog-Upload-Protocol": "raw",
           "Content-Type": file.type || "application/octet-stream",
-          "X-Goog-Upload-Header-Content-Length": String(file.size ?? 0),
+          "X-Goog-Upload-Header-Content-Length": String(bufView.byteLength),
+          "Content-Length": String(bufView.byteLength),
         },
-        body: file.stream(),
+        body: bufView,
       }
     );
 
