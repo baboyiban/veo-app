@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { GenerateVideosParameters, GoogleGenAI } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 
 export const runtime = "nodejs";
 
@@ -36,6 +36,9 @@ export async function POST(req: NextRequest) {
     if (input.negativePrompt) {
       request.config = { ...(request.config || {}), negativePrompt: input.negativePrompt };
     }
+
+    // durationSeconds is not supported by Veo 3 preview.
+    // generateAudio is not supported; Veo 3 audio is always on
 
     if (input.personGeneration) {
       request.personGeneration = input.personGeneration;

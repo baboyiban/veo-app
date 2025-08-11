@@ -8,11 +8,13 @@ type StatusResp = { done: boolean; fileUri?: string; raw?: any } | { error: stri
 
 export default function HomePage() {
   const [prompt, setPrompt] = useState(
-    "A close up of two people staring at a cryptic drawing on a wall, torchlight flickering. A man murmurs, 'This must be it. That's the secret code.' The woman looks at him and whispering excitedly, 'What did you find?'"
+    "살아있는 것 처럼 만들어줘"
   );
-  const [negative, setNegative] = useState("cartoon, drawing, low quality");
+  const [negative, setNegative] = useState("");
   const [aspect, setAspect] = useState("16:9");
   const [fast, setFast] = useState(false);
+  const [durationSeconds, setDurationSeconds] = useState<number>(5);
+  const [generateAudio, setGenerateAudio] = useState<boolean>(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageFileRef, setImageFileRef] = useState<string | undefined>();
 
@@ -56,7 +58,7 @@ export default function HomePage() {
         negativePrompt: negative || undefined,
         aspectRatio: aspect,
         imageFileId,
-        fast,
+  fast,
       }),
     });
     const data: StartResp = await res.json();
@@ -108,7 +110,7 @@ export default function HomePage() {
       <div className="card" style={{ marginBottom: 16 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <h1 style={{ margin: 0 }}>Veo 3 비디오 생성</h1>
-          <span className="badge">8s 720p + 오디오</span>
+          <span className="badge">{durationSeconds}s {generateAudio ? "+ 오디오" : "(무음)"}</span>
         </div>
         <p className="small">모델: {fast ? "veo-3.0-fast-generate-preview" : "veo-3.0-generate-preview"}</p>
       </div>
@@ -130,6 +132,25 @@ export default function HomePage() {
                 <select value={aspect} onChange={(e) => setAspect(e.target.value)}>
                   <option value="16:9">16:9 (지금은 고정)</option>
                 </select>
+              </div>
+              <div className="col">
+                <label>길이(초)</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={8}
+                  value={durationSeconds}
+                  onChange={(e) => setDurationSeconds(Number(e.target.value) || 8)}
+                />
+              </div>
+            </div>
+
+            <div className="row" style={{ marginTop: 8 }}>
+              <div className="col" style={{ display: "flex", alignItems: "end" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <input type="checkbox" checked={generateAudio} onChange={(e) => setGenerateAudio(e.target.checked)} />
+                  오디오 생성
+                </label>
               </div>
               <div className="col" style={{ display: "flex", alignItems: "end" }}>
                 <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
