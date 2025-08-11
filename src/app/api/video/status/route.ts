@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    return Response.json({ done: !!latest?.done, fileUri, progress, stage, raw: latest });
+    return Response.json({ done: !!latest?.done, fileUri, progress, stage, raw: latest, error: latest?.error });
   } catch (err: any) {
     console.error("/api/video/status error", err);
     return Response.json({ error: err?.message ?? "Unknown error" }, { status: 400 });

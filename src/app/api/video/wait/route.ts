@@ -62,6 +62,16 @@ export async function GET(req: NextRequest) {
       console.log(`[wait] Poll ${pollCount}: done=${done}, fileUri=${fileUri}`);
       console.log(`[wait] Raw response structure:`, JSON.stringify(last, null, 2).slice(0, 500));
 
+      if (last?.error) {
+        console.error(`[wait] Operation failed with error:`, last.error);
+        return Response.json({
+          error: `Operation failed: ${last.error.message || 'Unknown error'}`,
+          code: last.error.code,
+          done: true,
+          raw: last
+        }, { status: 400 });
+      }
+
       if (done && fileUri) {
         const url = `/api/video/download?fileUri=${encodeURIComponent(fileUri)}`;
         console.log(`[wait] Redirecting to: ${url}`);
@@ -75,9 +85,7 @@ export async function GET(req: NextRequest) {
           done: true,
           raw: last
         }, { status: 502 });
-      }
-
-      // backoff: poll every 10s
+      }      // backoff: poll every 10s
       await sleep(10_000);
     }
     return Response.json({ error: "Timed out waiting for video.", raw: last }, { status: 504 });

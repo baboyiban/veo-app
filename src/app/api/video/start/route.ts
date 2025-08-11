@@ -12,6 +12,7 @@ const bodySchema = z.object({
   imageFileId: z.string().optional(),
   imageFileUri: z.string().optional(),
   fast: z.boolean().optional(),
+  model: z.enum(["veo-2", "veo-3"]).default("veo-3"),
 });
 
 export async function POST(req: NextRequest) {
@@ -26,10 +27,15 @@ export async function POST(req: NextRequest) {
 
     const ai = new GoogleGenAI({ apiKey, vertexai: false } as any);
 
-    const model = input.fast ? "veo-3.0-fast-generate-preview" : "veo-3.0-generate-preview";
+    let modelName: string;
+    if (input.model === "veo-2") {
+      modelName = input.fast ? "veo-2.0-fast-generate-001" : "veo-2.0-generate-001";
+    } else {
+      modelName = input.fast ? "veo-3.0-fast-generate-preview" : "veo-3.0-generate-preview";
+    }
 
     const request: any = {
-      model,
+      model: modelName,
       prompt: input.prompt,
     };
 
